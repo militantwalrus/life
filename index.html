@@ -3,25 +3,29 @@
 <html>
 	<head>
 		<title>Game of Life</title>
-		<script type="text/javascript" src="life.js"></script>
 		<style type="text/css">
-			#header {
-
-			}
 			#world {
 				width:768px;
-				border:solid 1px black;
+				height:768px;
 				padding:0;
 				margin:auto;
 				overflow:hidden;
 			}
-			#start {
-
+			#controls {
+				margin:auto;
+				text-align:center;
+				margin:10px 0 10px 0;
+			}
+			#controls input {
+				cursor:pointer;
 			}
 			.cell {
+				border:0;
 				width:8px;
+				height:8px;
 				padding:0;
 				margin:0;
+				float:left;
 			}
 			.live {
 				background-color:#00FF00;
@@ -32,10 +36,11 @@
 		</style>
 	</head>
 	<body>
-		<div id="header"></div>
-		<div id="world"></div>
-		<div id="start">
+		<div id="controls">
 			<input type="button" id="start_button" value="Start" />
+			<input type="button" id="stop_button" value="Stop" />
 		</div>
+		<div id="world"></div>
+  <script type="text/javascript" src="life.js"></script>
 	</body>
 </html>
