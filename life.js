@@ -134,8 +134,8 @@ var initialized = false;
 
 function initialize() {
 	for (var i = 0; i < DIM; i++) {
-		curr[i] = [0, 0, 0];
-		next[i] = [0, 0, 0];
+		curr[i] = new Array(DIM);
+		next[i] = new Array(DIM);
 	}
 
 	var rand = Math.round(Math.random() * (DIM - 1));
@@ -168,15 +168,8 @@ function initializeMatrixFromKeyData(matrix) {
 	for (var i = 0; i < key_data.length; i++) {
 		var line = key_data[i]; // one line of text, 96 characters long
 
-		/* now make an array of 3 32-bit ints and put that onto matrix[i][0-2] */
-		for (var j = 0; j < 3; j++) {
-			var l = 32, o = 0, b = 0;
-			var s = line.slice(o, l);
-			o += l;
-			for (var shift = 0; shift < l; shift++) {
-				b |= (s.charCodeAt(shift) % 2) << shift;
-			}
-			matrix[i][j] = b;
+		for (var j = 0; j < DIM; j++) {
+			matrix[i][j] = line.charCodeAt(j) % 2;
 		}
 	}
 }
@@ -213,6 +206,20 @@ function copyMatrix(one, two) {
 	}
 }
 
+function buildHtmlGeneration(matrix) {
+	var d = document, cell;
+	var next_world = d.createElement(div);
+	next_world.id = 'next-world';
+
+	for (var i = 0; i < DIM; i++) {
+		for (var j = 0; j < DIM; j++) {
+			cell = d.createElement('div');
+			cell.class = 'cell ' + matrix[i][j] == 1 ? 'live' : 'dead';
+			next_world.appendChild(cell);
+		}
+	}
+}
+
 /*
  * do the bitmath to find which of the neighbors of this cell are 'alive'
  *
@@ -225,7 +232,6 @@ function countLivingNeighbors(matrix, x, y) {
 	ret = 0;
 	var top, left, right, bottom;
 
-	/* */
 	 var top    =  [[x - 1, y + 1], [x, y + 1], [x + 1, y + 1]],
 	     bottom =  [[x - 1, y - 1], [x, y - 1], [x + 1, y - 1]],
 	     left   =  [[x - 1, y]],
@@ -237,7 +243,37 @@ function countLivingNeighbors(matrix, x, y) {
 		left = null;
 	}
 
+	if (y == 0) {
+		bottom = [];
+	}
 
+	if (x == DIM - 1) {
+		top.pop()
+		bottom.pop()
+		right = null;
+	}
+
+	if (y == DIM - 1) {
+		top = []
+	}
+
+	if (top.length) {
+		for (var i = 0; i < top.length; i++)
+			ret += matrix[top[i][0]][top[i][1]];
+	}
+
+	if (bottom.length) {
+		for (var i = 0; i < bottom.length; i++)
+			ret += matrix[bottom[i][0]][bottom[i][1]];
+	}
+
+	if (left)
+		ret += matrix[left[0]][left[1]];
+
+	if (right)
+		ret += matrix[right[0]][right[1]];
+
+	return ret;
 }
 
 /*
@@ -249,7 +285,13 @@ function countLivingNeighbors(matrix, x, y) {
  *
  */
 function makeNextGeneration() {
-
+	var cell;
+	for (var i = 0; i < DIM; i++) {
+		for (j = 0; j < DIM; j++) {
+			cell = countLivingNeighbors(curr, i, j);
+			next[i][j] = (cell == 2 || cell == 3) ? 1 : 0;
+		}
+	}
 }
 
 /* build and swap the innerHTML of world */
@@ -273,7 +315,6 @@ function run() {
 function stop() {
 	clearInterval(clock);
 }
-
 
 
 
