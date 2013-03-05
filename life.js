@@ -111,13 +111,16 @@ var DIM = 96;
  * sleep - number of miliseconds to 'sleep()' in setInterval between
  * re-evaluations and display of the new state
  */
-var sleep = 500;
+var sleep = 1000;
 
 /*
  * global to hold the current interval clock
  */
 var clock;
 
+var max = 10, ticks = 0;
+
+var key_data = new Array(DIM);
 /*
  * curr, next - the tables of current, and next up values for the cells
  * both are arrays of DIM length, where each element will be an array(3)
@@ -134,14 +137,18 @@ var initialized = false;
 
 function initialize() {
 	for (var i = 0; i < DIM; i++) {
-		curr[i] = new Array(DIM);
-		next[i] = new Array(DIM);
+		curr[i]     = new Array(DIM);
+		next[i]     = new Array(DIM);
+		for (var j = 0; j < DIM; j++) {
+			curr[i][j] = 0;
+			if (Math.random() > 0.9)
+				curr[i][j] = key_text[i].charCodeAt(j) % 2;
+		}
 	}
 
 	var rand = Math.round(Math.random() * (DIM - 1));
 	rotateKeyData(rand);
-	initializeMatrixFromKeyData(curr);
-	swapBits(curr)
+	swapBits(curr);
 	var initialized = true;
 }
 
@@ -149,18 +156,22 @@ function initialize() {
 /*
  * slide the first row off the top, put it, face-down, on the front of the box
  * (it becomes the first column)
+ * the last column repopulates the top row.
  */
 function rotateKeyData(n) {
 	if (n < 1)
 		return;
 
 	while (n--) {
-		var t = key_data.shift();
-		key_data[DIM] = '';
+		var t = curr.shift();
 
-		for (var i = 0, j = DIM - 1; i < (DIM - 1); i++, j--) {
-			key_data[j] = charAt(i) + key_data[j];
-		}
+		curr.unshift([]);
+
+		for (var j = DIM - 1; t.length; j--)
+			curr[j].unshift(t.shift());
+
+		for (i = 1; i < DIM; i++)
+			curr[0].push(curr[i].pop());
 	}
 }
 
@@ -169,55 +180,50 @@ function initializeMatrixFromKeyData(matrix) {
 		var line = key_data[i]; // one line of text, 96 characters long
 
 		for (var j = 0; j < DIM; j++) {
-			matrix[i][j] = line.charCodeAt(j) % 2;
+			matrix[i][j] = line % 2;
 		}
 	}
 }
 
-function rotate(a, i, j) {
+function swap(a, i, j) {
 	var tmp = a[i];
 	a[i] = a[j];
 	a[j] = tmp;
 }
 
 function swapBits(matrix) {
-	/* use the 6 values in x as jump-into indices to swap matrix[i][1-3] around */
-	for (var i = 0; i < matrix.length; i++) {
-		var rand = Math.round(Math.random() * 100) % 3;
-		switch (rand) {
-		case 0:
-			rotate(matrix[i], 0, 1);
-			break;
-		case 1:
-			rotate(matrix[i], 1, 2);
-			break;
-		case 2:
-			rotate(matrix[i], 2, 3);
-			break;
-		}
-
+	var l = matrix.length;
+	for (var i = 0; i < l; i++) {
+		var j = Math.round(Math.random() * l);
+		var k = Math.round(Math.random() * l);
+		if (j != k)
+			swap(matrix[i], j, k);
 	}
 }
 
-function copyMatrix(one, two) {
-	for (var i = 0; i < one.length; i++) {
-		for (var j = 0; j < one[i].length; j++)
-			two[i][j] = one[i][j]
+function copyMatrix(src, dest) {
+	for (var i = 0; i < src.length; i++) {
+		for (var j = 0; j < src[i].length; j++)
+			dest[i][j] = src[i][j]
 	}
 }
 
 function buildHtmlGeneration(matrix) {
 	var d = document, cell;
-	var next_world = d.createElement(div);
-	next_world.id = 'next-world';
+	var next_world = d.createElement('div');
 
 	for (var i = 0; i < DIM; i++) {
+		var row = d.createElement('div');
 		for (var j = 0; j < DIM; j++) {
 			cell = d.createElement('div');
-			cell.class = 'cell ' + matrix[i][j] == 1 ? 'live' : 'dead';
-			next_world.appendChild(cell);
+			var c = 'cell ' + (matrix[i][j] == 1 ? 'live' : 'dead');
+			cell.className = c;
+			cell.textContent = '&nbsp;';
+			row.appendChild(cell);
 		}
+		next_world.appendChild(row);
 	}
+	return next_world;
 }
 
 /*
@@ -234,13 +240,13 @@ function countLivingNeighbors(matrix, x, y) {
 
 	 var top    =  [[x - 1, y + 1], [x, y + 1], [x + 1, y + 1]],
 	     bottom =  [[x - 1, y - 1], [x, y - 1], [x + 1, y - 1]],
-	     left   =  [[x - 1, y]],
-	     right  =  [[x + 1, y]];
+	     left   =  [x - 1, y],
+	     right  =  [x + 1, y];
 
 	if (x == 0) {
 		top.shift();
 		bottom.shift();
-		left = null;
+		left = [];
 	}
 
 	if (y == 0) {
@@ -250,7 +256,7 @@ function countLivingNeighbors(matrix, x, y) {
 	if (x == DIM - 1) {
 		top.pop()
 		bottom.pop()
-		right = null;
+		right = [];
 	}
 
 	if (y == DIM - 1) {
@@ -258,8 +264,10 @@ function countLivingNeighbors(matrix, x, y) {
 	}
 
 	if (top.length) {
-		for (var i = 0; i < top.length; i++)
+		for (var i = 0; i < top.length; i++) {
 			ret += matrix[top[i][0]][top[i][1]];
+		}
+
 	}
 
 	if (bottom.length) {
@@ -267,10 +275,10 @@ function countLivingNeighbors(matrix, x, y) {
 			ret += matrix[bottom[i][0]][bottom[i][1]];
 	}
 
-	if (left)
+	if (left.length)
 		ret += matrix[left[0]][left[1]];
 
-	if (right)
+	if (right.length)
 		ret += matrix[right[0]][right[1]];
 
 	return ret;
@@ -286,6 +294,7 @@ function countLivingNeighbors(matrix, x, y) {
  */
 function makeNextGeneration() {
 	var cell;
+	return;
 	for (var i = 0; i < DIM; i++) {
 		for (j = 0; j < DIM; j++) {
 			cell = countLivingNeighbors(curr, i, j);
@@ -296,25 +305,31 @@ function makeNextGeneration() {
 
 /* build and swap the innerHTML of world */
 function displayNextGeneration() {
-	var tab = buildHtmlGeneration(next);
-	document.getElementById('world').innerHTML = tab;
-}
-
-function do_game() {
-	if (!initialized)
-		initialize();
-
-	makeNextGeneration();
-	displayNextGeneration();
-}
-
-function run() {
-	clock = setInterval(do_game, sleep);
+	var next_world = buildHtmlGeneration(curr);
+	var world = document.getElementById('world');
+	world.innerHTML = next_world.innerHTML;
 }
 
 function stop() {
 	clearInterval(clock);
 }
 
+function do_game() {
+	if (!initialized) {
+		initialize();
+	}
 
+	makeNextGeneration();
+	displayNextGeneration();
+}
+
+function run(e) {
+	e.preventDefault();
+	e.stopPropagation();
+	clock = setInterval(do_game, sleep);
+}
+
+
+document.getElementById('start_button').addEventListener('click', run, false);
+document.getElementById('stop_button').addEventListener('click', stop, false);
 
