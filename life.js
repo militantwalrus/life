@@ -138,41 +138,124 @@ function initialize() {
 		next[i] = [0, 0, 0];
 	}
 
-	/* get
-	 * 1) base random number 1-100 r
-	 * 2) do r rotations of key_text
-	 * 3) initialize bit values from key_text
-	 * 4) get timestamp, stringify, take 10 2-digit pairs, a-j
-	 * 5) for a -> j, jump to that point in curr, swap 1, 2, 3 ints in that index of curr
-	 * 6) copy curr into next - trick so that we always call makeNextGeneration(curr)
-	 */
-
+	var rand = Math.round(Math.random() * (DIM - 1));
+	rotateKeyData(rand);
+	initializeMatrixFromKeyData(curr);
+	swapBits(curr)
 	var initialized = true;
 }
 
 
-function rotateKeyData() {
+/*
+ * slide the first row off the top, put it, face-down, on the front of the box
+ * (it becomes the first column)
+ */
+function rotateKeyData(n) {
+	if (n < 1)
+		return;
 
+	while (n--) {
+		var t = key_data.shift();
+		key_data[DIM] = '';
+
+		for (var i = 0, j = DIM - 1; i < (DIM - 1); i++, j--) {
+			key_data[j] = charAt(i) + key_data[j];
+		}
+	}
+}
+
+function initializeMatrixFromKeyData(matrix) {
+	for (var i = 0; i < key_data.length; i++) {
+		var line = key_data[i]; // one line of text, 96 characters long
+
+		/* now make an array of 3 32-bit ints and put that onto matrix[i][0-2] */
+		for (var j = 0; j < 3; j++) {
+			var l = 32, o = 0, b = 0;
+			var s = line.slice(o, l);
+			o += l;
+			for (var shift = 0; shift < l; shift++) {
+				b |= (s.charCodeAt(shift) % 2) << shift;
+			}
+			matrix[i][j] = b;
+		}
+	}
+}
+
+function rotate(a, i, j) {
+	var tmp = a[i];
+	a[i] = a[j];
+	a[j] = tmp;
+}
+
+function swapBits(matrix) {
+	/* use the 6 values in x as jump-into indices to swap matrix[i][1-3] around */
+	for (var i = 0; i < matrix.length; i++) {
+		var rand = Math.round(Math.random() * 100) % 3;
+		switch (rand) {
+		case 0:
+			rotate(matrix[i], 0, 1);
+			break;
+		case 1:
+			rotate(matrix[i], 1, 2);
+			break;
+		case 2:
+			rotate(matrix[i], 2, 3);
+			break;
+		}
+
+	}
+}
+
+function copyMatrix(one, two) {
+	for (var i = 0; i < one.length; i++) {
+		for (var j = 0; j < one[i].length; j++)
+			two[i][j] = one[i][j]
+	}
 }
 
 /*
  * do the bitmath to find which of the neighbors of this cell are 'alive'
  *
+ * @param matrix - the array to analyze
  * @param integer x - offset on x axis
  * @param integer y - offset on y axis
  * @return integer  - count of 'live' neighbors (positions having bit value = 1 in curr array)
  */
-function countLivingNeighbors(x, y) {
+function countLivingNeighbors(matrix, x, y) {
 	ret = 0;
+	var top, left, right, bottom;
+
+	/* */
+	 var top    =  [[x - 1, y + 1], [x, y + 1], [x + 1, y + 1]],
+	     bottom =  [[x - 1, y - 1], [x, y - 1], [x + 1, y - 1]],
+	     left   =  [[x - 1, y]],
+	     right  =  [[x + 1, y]];
+
+	if (x == 0) {
+		top.shift();
+		bottom.shift();
+		left = null;
+	}
+
+
 }
 
+/*
+ * apply the rules to determine the population of the next generation
+ *
+ * neighbors == 2 or 3 => lives on
+ * else => dies next tick
+ *
+ *
+ */
 function makeNextGeneration() {
 
 }
 
-/* swap the innerHTML of world */
+/* build and swap the innerHTML of world */
 function displayNextGeneration() {
-
+	var tab = buildHtmlGeneration(next);
+	document.getElementById('world').innerHTML = tab;
 }
 
 function do_game() {
