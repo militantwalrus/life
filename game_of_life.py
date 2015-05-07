@@ -182,7 +182,7 @@ if __name__ == '__main__':
 	opts = {'size': 1024, 'iter': None, 'god': False}
 
 	try:
-		optlist, args = getopt.getopt(sys.argv[1:], 'gs:n:', [])
+		optlist, args = getopt.getopt(sys.argv[1:], 'hgs:n:', [])
 		for o, a in optlist:
 			if o == '-s':
 				opts['size'] = int(a)
@@ -190,6 +190,9 @@ if __name__ == '__main__':
 				opts['iter'] = int(a)
 			if o == '-g':
 				opts['god'] = 1
+			if o == '-h':
+				print "Conway's Game of Life"
+				usage()
 
         except Exception as e:
                 sys.stderr.write("{0}\n".format(e))
