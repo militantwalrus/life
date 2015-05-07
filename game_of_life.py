@@ -203,6 +203,7 @@ if __name__ == '__main__':
 	if x != int(x):
 		m = "specified size {0} does not have an integer square root. Please choose again\n".format(opts['size'])
 		sys.stderr.write(m)
+		sys.exit(1)
 
 	GameOfLife(opts)
 
